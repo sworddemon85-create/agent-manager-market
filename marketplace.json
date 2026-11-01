@@ -1,0 +1,19 @@
+{
+  "name": "agent-manager-market",
+  "plugins": [
+    {
+      "name": "agent-manager",
+      "source": "./agent-manager",
+      "version": "0.1.0",
+      "description": "Manage ZCode subagents: inventory, create, edit and validate agent definition files, and dispatch one task to multiple agents in parallel",
+      "displayName": "Agent Manager",
+      "displayName_i18n": {
+        "zh-CN": "智能体管家"
+      },
+      "description_i18n": {
+        "zh-CN": "管理 ZCode 智能体:盘点、创建、修改、校验智能体定义文件,并把一个任务并行派发给多个智能体协作完成"
+      },
+      "category": "developer-tools"
+    }
+  ]
+}

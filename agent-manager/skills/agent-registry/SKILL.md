@@ -11,7 +11,7 @@ description: 管理 ZCode 智能体(subagent)定义文件:盘点有哪些智能�
 
 | 作用域 | 目录 | 权限 |
 |---|---|---|
-| 用户级 | `~/.zcode/agents/*.md`(本机为 `C:\Users\swd06\.zcode\agents\`) | 可读写,全局生效 |
+| 用户级 | `~/.zcode/agents/*.md`(Windows 下通常为 `C:\Users\<你>\.zcode\agents\`) | 可读写,全局生效 |
 | 工作区级 | `<工作区>/.zcode/agents/*.md` | 可读写,仅本工作区生效;目录不存在时按需创建 |
 | 插件自带 | ZCode 插件缓存目录下的 agents | 只读:可盘点,不要修改 |
 

@@ -4,7 +4,7 @@
     {
       "name": "agent-manager",
       "source": "./agent-manager",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "description": "Manage ZCode subagents: inventory, create, edit and validate agent definition files, and dispatch one task to multiple agents in parallel",
       "displayName": "Agent Manager",
       "displayName_i18n": {

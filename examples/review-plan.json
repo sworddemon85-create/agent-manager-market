@@ -1,0 +1,8 @@
+{
+  "concurrency": 2,
+  "tasks": [
+    {"id":"review","agent":"issue-triage","prompt":"Identify edge cases in this proposed function.","context":"divide(a,b) returns a / b without validation."},
+    {"id":"tests","agent":"test-runner","prompt":"Propose tests; do not claim to execute them.","context":"divide(a,b) returns a / b without validation."},
+    {"id":"summary","agent":"doc-writer","dependsOn":["review","tests"],"prompt":"Combine the findings and proposed tests into a concise implementation checklist."}
+  ]
+}

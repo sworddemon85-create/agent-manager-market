@@ -57,3 +57,22 @@ tools: Read, Bash
 例如：`/agent-team 审查插件配置与盘点脚本，分别报告问题，再根据结果补充文档`。前两项可只读并行，文档任务等待审查完成。运行时没有派发能力时，主会话明确说明并直接执行，不模拟多智能体结果。
 
 详见 [协作技能](agent-manager/skills/agent-team/SKILL.md)。这些规则属于调度提示词，实际并发、取消和工具权限由 ZCode 运行时提供。
+
+## 独立执行模式（0.2.0）
+
+需要 PATH 中的 Node.js 20.3+，无 npm 依赖。此模式通过 OpenAI-compatible Chat Completions HTTP 接口启动独立模型会话，支持 1–8 并发、最多 32 项任务、依赖结果传递、失败阻塞及取消。各 worker 只有文本推理能力，没有文件读写或命令执行工具；需要实际改代码、执行测试时使用宿主原生 Agent。
+
+配置环境变量 `AGENT_API_BASE`（包含 `/v1` 或服务商实际 API 前缀）、`AGENT_API_KEY`、`AGENT_MODEL`。密钥只从环境读取，不写进计划或仓库。远程地址要求 HTTPS，本机服务可用 loopback HTTP。调用会把计划中的 prompt、context 和上游结果发给配置的服务商，并可能产生模型费用。
+
+在仓库根目录运行：
+
+```sh
+node agent-manager/runtime/team-cli.mjs examples/review-plan.json
+node --test tests/*.test.mjs
+```
+
+CLI 输出每项状态与结果，整体不成功时退出码为 1。Ctrl+C 取消请求。单项模型请求超时 60 秒，不自动重复付费请求。运行时的 MCP 工具 `team_run` 接收相同计划对象；插件已声明 stdio 服务，命令和参数均为独立 argv。启动宿主前需设置上述环境变量。没有配置时工具返回明确错误，不回退为伪造结果。
+
+`test-runner` 在独立模式下只分析测试方案；其名称不表示执行过测试。任务完成表示模型返回了文本，不等于内容已被事实验证，主会话仍需验收。
+
+验证范围：自动化测试可在 ZCode 外运行；模拟服务测试验证传输与调度，不证明真实模型质量或 ZCode 客户端兼容性。

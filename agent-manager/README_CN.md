@@ -28,12 +28,12 @@
 ## 行为与副作用(披露)
 
 - **文件写入**:新建/修改流程会在 `~/.zcode/agents/` 或 `<工作区>/.zcode/agents/` 下写 Markdown 定义文件;盘点与校验均为只读。
-- **命令执行**:SessionStart 钩子运行内置只读脚本(`scripts/inventory.sh`)扫描两级定义目录;派发流程通过 ZCode 的 Agent 工具调用子智能体。
+- **命令执行**:SessionStart 钩子运行内置只读脚本(`scripts/inventory.mjs`)扫描两级定义目录;派发流程通过 ZCode 的 Agent 工具调用子智能体。
 - **钩子**:仅 `SessionStart`;输出作为会话上下文注入,且始终以 0 退出,不会阻塞启动。
-- **网络**:插件本身不发起网络请求;内置 `issue-triage` 智能体在你要求核实外部资料时可能使用 WebFetch。
+- **网络**:原生调度模式不额外发起网络请求；独立模型模式会调用配置的服务商;内置 `issue-triage` 智能体在你要求核实外部资料时可能使用 WebFetch。
 - **内置智能体使用各自工具干活**:`doc-writer` 被派发后会写项目文档文件,`test-runner` 会通过 bash 执行项目测试命令——只派发你能接受其影响的任务。
-- **无 MCP server、无凭据、无遥测。**
-- **Windows 提示**:钩子依赖 PATH 中的 `bash`(Git Bash 即可)。
+- **独立模式提供 MCP server，需要模型服务凭据；无遥测。**
+- **Windows 提示**:钩子依赖 PATH 中的 Node.js 20.3+。
 
 ## 定义格式
 
@@ -54,3 +54,5 @@ tools: Read, Bash
 ## 许可证
 
 [MIT](./LICENSE)
+
+0.2.0：新增独立模型协作工具 `team_run` 与 `runtime/team-cli.mjs`。需要 Node.js 20.3+，配置环境变量 AGENT_API_BASE、AGENT_API_KEY、AGENT_MODEL。传入上下文会发送至配置的模型服务商并可能产生费用。独立 worker 仅能文本分析，不能修改文件或实际执行测试；需要工具时使用宿主原生 Agent。SessionStart 已改用 scripts/inventory.mjs 输出 JSON 上下文，不再依赖 Bash。

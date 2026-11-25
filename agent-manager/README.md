@@ -28,7 +28,7 @@ A ZCode plugin for **managing subagents**: inventory, create, edit and validate 
 ## Behavior and side effects (disclosure)
 
 - **File writes**: the create/edit flows write Markdown agent definition files under `~/.zcode/agents/` or `<workspace>/.zcode/agents/`. Validation and inventory are read-only.
-- **Command execution**: the SessionStart hook runs a bundled read-only bash script (`scripts/inventory.sh`) that scans the two definition directories; dispatch flows invoke subagents via ZCode's Agent tool.
+- **Command execution**: the SessionStart hook runs a bundled read-only bash script (`scripts/inventory.mjs`) that scans the two definition directories; dispatch flows invoke subagents via ZCode's Agent tool.
 - **Hook**: `SessionStart` only. Its output is injected as session context and it always exits 0, so it never blocks startup.
 - **Network**: the plugin itself makes no network requests. The bundled `issue-triage` agent may use WebFetch when you ask it to verify external references.
 - **Bundled agents act with their own tools**: `doc-writer` writes project documentation files and `test-runner` runs project test commands when dispatched — send them only tasks whose effects you accept.
@@ -54,3 +54,5 @@ Body = the agent's system prompt (role, duties, constraints, output format).
 ## License
 
 [MIT](./LICENSE)
+
+Independent model teams (0.2.0): Node.js 20.3+ is required. Set AGENT_API_BASE, AGENT_API_KEY and AGENT_MODEL in the host environment. The bundled MCP team_run tool and runtime/team-cli.mjs support concurrent text-only workers with dependencies. Context is sent to the configured provider and may incur charges. Workers cannot edit files or execute tests; use native host agents for those operations. SessionStart now uses scripts/inventory.mjs and emits structured JSON context; Bash is not required for inventory.

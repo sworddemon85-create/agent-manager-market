@@ -28,12 +28,12 @@ A ZCode plugin for **managing subagents**: inventory, create, edit and validate 
 ## Behavior and side effects (disclosure)
 
 - **File writes**: the create/edit flows write Markdown agent definition files under `~/.zcode/agents/` or `<workspace>/.zcode/agents/`. Validation and inventory are read-only.
-- **Command execution**: the SessionStart hook runs a bundled read-only bash script (`scripts/inventory.mjs`) that scans the two definition directories; dispatch flows invoke subagents via ZCode's Agent tool.
+- **Command execution**: the SessionStart hook runs a bundled read-only Node.js script (`scripts/inventory.mjs`) that scans user, workspace and bundled definition directories; dispatch flows invoke subagents via ZCode's Agent tool.
 - **Hook**: `SessionStart` only. Its output is injected as session context and it always exits 0, so it never blocks startup.
-- **Network**: the plugin itself makes no network requests. The bundled `issue-triage` agent may use WebFetch when you ask it to verify external references.
+- **Network**: independent model workers send supplied context to the configured model provider; native dispatch adds no separate provider calls. The bundled `issue-triage` agent may use WebFetch when you ask it to verify external references.
 - **Bundled agents act with their own tools**: `doc-writer` writes project documentation files and `test-runner` runs project test commands when dispatched — send them only tasks whose effects you accept.
-- **No MCP server, no credentials, no telemetry.**
-- **Windows note**: the hook requires `bash` on PATH (Git Bash works).
+- **MCP server included; independent mode requires provider credentials. No telemetry.**
+- **Windows note**: the hook and MCP server require Node.js 20.3+ on PATH.
 
 ## Agent definition format
 

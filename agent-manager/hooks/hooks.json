@@ -4,8 +4,12 @@
       {
         "hooks": [
           {
-            "type": "command",
-            "command": "bash \"${ZCODE_PLUGIN_ROOT}/scripts/inventory.sh\""
+            "args": [
+              "${ZCODE_PLUGIN_ROOT}/scripts/inventory.mjs"
+            ],
+            "command": "node",
+            "timeoutMs": 5000,
+            "type": "process"
           }
         ]
       }

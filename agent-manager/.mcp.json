@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "agent-team": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["${ZCODE_PLUGIN_ROOT}/runtime/server.mjs"],
+      "timeoutMs": 600000
+    }
+  }
+}

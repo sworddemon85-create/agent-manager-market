@@ -24,6 +24,26 @@ export function validatePlan(plan) {
   for (const id of ids) visit(id);
 }
 
+function cancellableWork(work, signal) {
+  if (!signal) return Promise.resolve().then(work);
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const finish = (callback, value) => {
+      if (settled) return;
+      settled = true;
+      signal.removeEventListener('abort', onAbort);
+      callback(value);
+    };
+    const onAbort = () => finish(reject, signal.reason ?? new Error('Cancelled'));
+    if (signal.aborted) { onAbort(); return; }
+    signal.addEventListener('abort', onAbort, { once: true });
+    Promise.resolve().then(() => {
+      signal.throwIfAborted();
+      return work();
+    }).then(value => finish(resolve, value), error => finish(reject, error));
+  });
+}
+
 export async function runTeam(plan, worker, { concurrency = 3, signal } = {}) {
   validatePlan(plan);
   if (!Number.isInteger(concurrency) || concurrency < 1 || concurrency > 8) throw new Error('concurrency must be 1..8');
@@ -38,9 +58,9 @@ export async function runTeam(plan, worker, { concurrency = 3, signal } = {}) {
       if (active.size >= concurrency || deps.some(r => r.status !== 'completed')) continue;
       const startedAt = new Date().toISOString();
       results[t.id] = { status: 'running', startedAt };
-      const job = Promise.resolve().then(() => worker(t, Object.fromEntries((t.dependsOn || []).map(id => [id, results[id].output])), signal))
+      const job = cancellableWork(() => worker(t, Object.fromEntries((t.dependsOn || []).map(id => [id, results[id].output])), signal), signal)
         .then(output => { results[t.id] = { status: 'completed', startedAt, finishedAt: new Date().toISOString(), output }; })
-        .catch(error => { results[t.id] = { status: signal?.aborted ? 'cancelled' : 'failed', startedAt, error: error instanceof Error ? error.message : String(error) }; })
+        .catch(error => { results[t.id] = { status: signal?.aborted ? 'cancelled' : 'failed', startedAt, finishedAt: new Date().toISOString(), error: error instanceof Error ? error.message : String(error) }; })
         .finally(() => active.delete(t.id));
       active.set(t.id, job);
     }

@@ -2,6 +2,81 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { runTeam, validatePlan, createModelWorker } from '../agent-manager/runtime/team.mjs';
 import { createServer } from 'node:http';
+import { getEventListeners } from 'node:events';
+
+test('settled workers remove cancellation listeners', async () => {
+  for (const fails of [false, true]) {
+    const controller = new AbortController();
+    const tasks = Array.from({ length: 32 }, (_, index) => ({ id: 'task' + index, prompt: 'work' }));
+    await runTeam({ tasks }, async () => {
+      if (fails) throw new Error('worker failed');
+      return 'done';
+    }, { concurrency: 8, signal: controller.signal });
+    assert.equal(getEventListeners(controller.signal, 'abort').length, 0);
+  }
+});
+
+test('cancellation returns even when an active worker ignores the signal', async () => {
+  const controller = new AbortController();
+  let release, announceStart;
+  const started = new Promise(resolve => { announceStart = resolve; });
+  const calls = [];
+  const work = runTeam({ tasks: [
+    { id: 'active', prompt: 'work' },
+    { id: 'dependent', prompt: 'next', dependsOn: ['active'] },
+    { id: 'queued', prompt: 'later' },
+  ] }, task => {
+    calls.push(task.id);
+    announceStart();
+    return new Promise(resolve => { release = resolve; });
+  }, { concurrency: 1, signal: controller.signal });
+  await started;
+  controller.abort();
+  let timer;
+  try {
+    const result = await Promise.race([
+      work,
+      new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('Cancellation did not settle the team')), 250); }),
+    ]);
+    assert.equal(result.status, 'incomplete');
+    for (const value of Object.values(result.tasks)) assert.equal(value.status, 'cancelled');
+    assert.deepEqual(calls, ['active']);
+    assert.equal(getEventListeners(controller.signal, 'abort').length, 0);
+    const snapshot = JSON.stringify(result);
+    release('late output');
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(JSON.stringify(result), snapshot);
+  } finally {
+    clearTimeout(timer);
+    release('cleanup');
+    await work;
+  }
+});
+
+test('abort before the worker microtask runs does not invoke queued workers', async () => {
+  const controller = new AbortController();
+  let calls = 0;
+  const work = runTeam({ tasks: [{ id: 'a', prompt: 'a' }] }, () => { calls++; return 'output'; }, { signal: controller.signal });
+  controller.abort();
+  const result = await work;
+  assert.equal(calls, 0);
+  assert.equal(result.tasks.a.status, 'cancelled');
+});
+
+test('a late rejection after cancellation is handled without changing the result', async () => {
+  const controller = new AbortController();
+  let fail, announceStart;
+  const started = new Promise(resolve => { announceStart = resolve; });
+  const work = runTeam({ tasks: [{ id: 'a', prompt: 'a' }] }, () => {
+    announceStart();
+    return new Promise((_, reject) => { fail = reject; });
+  }, { signal: controller.signal });
+  await started;
+  controller.abort();
+  fail(new Error('Late provider error'));
+  const result = await work;
+  assert.equal(result.tasks.a.status, 'cancelled');
+});
 
 test('independent agents overlap; dependent agent gets both results', async () => {
   let active = 0, peak = 0;
